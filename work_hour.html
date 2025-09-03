@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Part-Time Work Claim Form</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    h2 { text-align: center; }
+    input, button { padding: 8px; margin: 5px 0; width: 100%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    th { background: #eee; }
+    .total { font-weight: bold; margin-top: 10px; text-align: right; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📄 Part-Time Work Claim Form</h2>
+
+    <label>Name:</label>
+    <input type="text" id="name" placeholder="Angela My BABYYY">
+
+    <label>Month:</label>
+    <input type="text" id="month" placeholder="Sept">
+
+    <label>Day (DD):</label>
+    <input type="number" id="day" placeholder="01">
+
+    <label>Clock-In (HHMM, 24hrs(Follow Your Card)):</label>
+    <input type="text" id="clockIn" maxlength="4" placeholder="0730">
+
+    <label>Clock-Out (HHMM, 24hrs(Follow Your Card)):</label>
+    <input type="text" id="clockOut" maxlength="4" placeholder="1600">
+
+    <button onclick="addEntry()">Add Entry</button>
+
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Hours</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="total" id="totalHours">Total Hours: 0</div>
+    <div class="total" id="totalPay">Total Pay: RM0.00</div>
+
+    <button onclick="exportPDF()">📥 Export to PDF</button>
+  </div>
+
+  <script>
+    let records = [];
+    const rate = 10.00;
+
+    function formatTime(input) {
+      if (!/^\d{4}$/.test(input)) return null;
+      return input.slice(0,2) + ":" + input.slice(2,4);
+    }
+
+    function getValueOrPlaceholder(id) {
+      const el = document.getElementById(id);
+      return el.value.trim() || el.placeholder;
+    }
+
+    function addEntry() {
+      const name = getValueOrPlaceholder("name");
+      const month = getValueOrPlaceholder("month");
+      const day = getValueOrPlaceholder("day").padStart(2,'0');
+      const clockInRaw = getValueOrPlaceholder("clockIn");
+      const clockOutRaw = getValueOrPlaceholder("clockOut");
+
+      const clockIn = formatTime(clockInRaw);
+      const clockOut = formatTime(clockOutRaw);
+
+      if (!clockIn || !clockOut) {
+        alert("⚠️ Please enter valid time in HHMM format");
+        return;
+      }
+
+      const inTime = new Date(`${month} ${day}, ${new Date().getFullYear()} ${clockIn}`);
+      const outTime = new Date(`${month} ${day}, ${new Date().getFullYear()} ${clockOut}`);
+      if (outTime <= inTime) {
+        alert("⚠️ Clock-Out must be after Clock-In");
+        return;
+      }
+
+      const workHours = (outTime - inTime) / 3600000;
+
+      records.push({ date: `${day} ${month}`, from: clockIn, to: clockOut, hours: workHours.toFixed(2) });
+      updateTable();
+    }
+
+    function updateTable() {
+      const tbody = document.querySelector("#recordsTable tbody");
+      tbody.innerHTML = "";
+      let total = 0;
+
+      records.forEach(r => {
+        tbody.innerHTML += `<tr>
+          <td>${r.date}</td><td>${r.from}</td><td>${r.to}</td><td>${r.hours}</td>
+        </tr>`;
+        total += parseFloat(r.hours);
+      });
+
+      document.getElementById("totalHours").innerText = `Total Hours: ${total.toFixed(2)}`;
+      document.getElementById("totalPay").innerText = `Total Pay: RM${(total * rate).toFixed(2)}`;
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const name = getValueOrPlaceholder("name");
+      const month = getValueOrPlaceholder("month");
+
+      doc.setFontSize(12);
+      doc.text("Pickle Venture Sdn. Bhd.", 14, 15);
+      doc.text("Part Time Work Claim Form", 14, 22);
+      doc.text(`Name: ${name}`, 14, 32);
+      doc.text(`Month: ${month}`, 14, 39);
+
+      // Table
+      doc.autoTable({
+        startY: 45,
+        head: [['Date', 'From', 'To', 'Hours']],
+        body: records.map(r => [r.date, r.from, r.to, r.hours]),
+      });
+
+      let total = records.reduce((sum, r) => sum + parseFloat(r.hours), 0);
+      let finalY = doc.lastAutoTable.finalY + 10;
+
+      doc.text(`Total Hours: ${total.toFixed(2)}`, 14, finalY);
+      doc.text(`Rate Per Hour: RM${rate.toFixed(2)}`, 14, finalY + 7);
+      doc.text(`Total: RM${(total * rate).toFixed(2)}`, 14, finalY + 14);
+
+      doc.save("work_claim_form.pdf");
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>
