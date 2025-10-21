@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GuangZhou Budget Calculator (RM)</title>
+  <title>GuangZhou Trip Budget Calculator (RM)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f7f9fb;
       color: #333;
-      max-width: 700px;
+      max-width: 900px;
       margin: 40px auto;
       padding: 25px;
       border-radius: 12px;
@@ -21,26 +21,56 @@
     .section {
       margin-bottom: 25px;
     }
-    label {
-      display: block;
-      margin: 6px 0;
+    .hotel-day {
+      margin-bottom: 25px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
     }
-    select {
-      margin-bottom: 10px;
+    .hotel-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .hotel-card {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      width: 150px;
+      text-align: center;
+      background: white;
+      transition: transform 0.2s;
+    }
+    .hotel-card:hover {
+      transform: scale(1.03);
+    }
+    .hotel-card img {
       width: 100%;
-      padding: 6px;
-      border-radius: 5px;
+      height: 100px;
+      object-fit: cover;
+    }
+    .hotel-card input {
+      margin-top: 6px;
+    }
+    .hotel-card a {
+      display: block;
+      color: #0066cc;
+      font-size: 13px;
+      margin: 5px 0 8px;
+      text-decoration: none;
+    }
+    .hotel-card a:hover {
+      text-decoration: underline;
     }
     button {
       background: #0066cc;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 25px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 16px;
       display: block;
-      margin: 0 auto;
+      margin: 20px auto;
     }
     button:hover {
       background: #004c99;
@@ -52,9 +82,6 @@
       margin-top: 20px;
       font-size: 18px;
       text-align: center;
-    }
-    small {
-      color: #555;
     }
   </style>
 </head>
@@ -88,40 +115,73 @@
 
   <script>
     const hotels = [
-      { name: "Queen Room", price: 96 },
-      { name: "Discount Double Room", price: 76 },
-      { name: "270° Tower View Suite On High Floor", price: 338 },
-      { name: "Tower View Deluxe King Room", price: 356 },
-      { name: "Angsea Sea Tower View", price: 199 },
-      { name: "Argyle Grand Hotel", price: 166 }
+      {
+        name: "Queen Room",
+        price: 96,
+        img: "https://ak-d.tripcdn.com/images/1mc3u12000kdy22g01A32_W_1280_853_R5.webp",
+        link: "https://www.trip.com/w/19mG61eRxR2"
+      },
+      {
+        name: "Discount Double Room",
+        price: 76,
+        img: "https://ak-d.tripcdn.com/images/0206b120008obytow94BC_R_600_400_R5.webp",
+        link: "https://www.trip.com/w/gwFwQaXRxR2"
+      },
+      {
+        name: "270° Tower View Suite On High Floor",
+        price: 338,
+        img: "https://ak-d.tripcdn.com/images/1mc3c12000ejimyddBC83_W_1280_853_R5.webp",
+        link: "https://www.trip.com/w/uVIqceDRxR2"
+      },
+      {
+        name: "Tower View Deluxe King Room",
+        price: 356,
+        img: "https://ak-d.tripcdn.com/images/1mc6k12000dp5o9jbF2AF_W_1280_853_R5.webp?proc=watermark/image_trip1,l_ne,x_16,y_16,w_67,h_16;digimark/t_image,logo_tripbinary;ignoredefaultwm,1A8F",
+        link: "https://www.trip.com/w/1M9oBixVxR2"
+      },
+      {
+        name: "Angsea Sea Tower View",
+        price: 199,
+        img: "https://ak-d.tripcdn.com/images/1mc2612000dq2oud46AD3_W_1280_853_R5.webp",
+        link: "https://www.trip.com/w/uVIqceDRxR2"
+      },
+      {
+        name: "Argyle Grand Hotel 5*(Breakie, Tea & Airport)",
+        price: 166,
+        img: "https://ak-d.tripcdn.com/images/1mc1212000n0acli8F25B_W_1280_853_R5.webp?proc=watermark/image_trip1,l_ne,x_16,y_16,w_67,h_16;digimark/t_image,logo_tripbinary;ignoredefaultwm,1A8F",
+        link: "https://www.trip.com/w/X8ANmMsUxR2"
+      }
     ];
 
-    // create 8 dropdowns for 8 days
-    const hotelContainer = document.getElementById("hotelSelection");
+    // Generate 8 days of hotel selection
+    const container = document.getElementById("hotelSelection");
     for (let day = 1; day <= 8; day++) {
-      const select = document.createElement("select");
-      select.id = `hotelDay${day}`;
-      const label = document.createElement("label");
-      label.textContent = `Day ${day}:`;
+      const dayDiv = document.createElement("div");
+      dayDiv.className = "hotel-day";
+      dayDiv.innerHTML = `<h4>Day ${day}</h4>`;
+      
+      const hotelOptions = document.createElement("div");
+      hotelOptions.className = "hotel-options";
 
-      const defaultOption = document.createElement("option");
-      defaultOption.value = 0;
-      defaultOption.textContent = "-- Select Hotel --";
-      select.appendChild(defaultOption);
-
-      hotels.forEach(h => {
-        const opt = document.createElement("option");
-        opt.value = h.price;
-        opt.textContent = `${h.name} (RM${h.price})`;
-        select.appendChild(opt);
+      hotels.forEach((h, index) => {
+        const card = document.createElement("label");
+        card.className = "hotel-card";
+        card.innerHTML = `
+          <img src="${h.img}" alt="${h.name}">
+          <div><strong>${h.name}</strong></div>
+          <div>RM${h.price}</div>
+          <a href="${h.link}" target="_blank">View</a>
+          <input type="radio" name="day${day}" value="${h.price}">
+        `;
+        hotelOptions.appendChild(card);
       });
 
-      hotelContainer.appendChild(label);
-      hotelContainer.appendChild(select);
+      dayDiv.appendChild(hotelOptions);
+      container.appendChild(dayDiv);
     }
 
     function calculateBudget() {
-      const fixedCost = 1612 + 500 + 100; // flight + food + transport
+      const fixedCost = 1612 + 500 + 100;
 
       const activityPrices = {
         Chimelong: 201,
@@ -132,35 +192,28 @@
         HaiZhuTramLine: 4
       };
 
-      const selectedActivities = Array.from(document.querySelectorAll('input[type=checkbox]:checked'))
-        .map(cb => cb.value);
+      const selectedActivities = Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
 
       let activityTotal = 0;
-
-      // Special combo discount
       if (selectedActivities.includes("RiverCruise") && selectedActivities.includes("CantonTower")) {
         activityTotal += 260;
         selectedActivities.splice(selectedActivities.indexOf("RiverCruise"), 1);
         selectedActivities.splice(selectedActivities.indexOf("CantonTower"), 1);
       }
+      selectedActivities.forEach(a => activityTotal += activityPrices[a]);
 
-      // Add remaining activities
-      selectedActivities.forEach(a => {
-        activityTotal += activityPrices[a];
-      });
-
-      // Calculate hotel total (8 days)
+      // sum selected hotel values
       let hotelTotal = 0;
       for (let day = 1; day <= 8; day++) {
-        const val = Number(document.getElementById(`hotelDay${day}`).value);
-        hotelTotal += val;
+        const selected = document.querySelector(`input[name=day${day}]:checked`);
+        if (selected) hotelTotal += Number(selected.value);
       }
 
       const total = fixedCost + activityTotal + hotelTotal;
 
       document.getElementById("result").innerHTML = `
         <strong>Total Trip Budget:</strong> RM${total.toFixed(2)}<br>
-        <small>Includes flight, food, transport, activities, and 8 hotel nights.</small>
+        <small>(Includes flight, food, transport, activities & 8 hotel nights)</small>
       `;
     }
   </script>
