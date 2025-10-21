@@ -2,148 +2,167 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Part-Time Work Claim Form</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>GuangZhou Budget Calculator (RM)</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-    h2 { text-align: center; }
-    input, button { padding: 8px; margin: 5px 0; width: 100%; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-    th { background: #eee; }
-    .total { font-weight: bold; margin-top: 10px; text-align: right; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f9fb;
+      color: #333;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #0066cc;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    label {
+      display: block;
+      margin: 6px 0;
+    }
+    select {
+      margin-bottom: 10px;
+      width: 100%;
+      padding: 6px;
+      border-radius: 5px;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      display: block;
+      margin: 0 auto;
+    }
+    button:hover {
+      background: #004c99;
+    }
+    .result {
+      background: #e9f3ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 18px;
+      text-align: center;
+    }
+    small {
+      color: #555;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>📄 Part-Time Work Claim Form</h2>
-
-    <label>Name:</label>
-    <input type="text" id="name" placeholder="Angela My BABYYY">
-
-    <label>Month:</label>
-    <input type="text" id="month" placeholder="Sept">
-
-    <label>Day (DD):</label>
-    <input type="number" id="day" placeholder="01">
-
-    <label>Clock-In (HHMM, 24hrs(Follow Your Card)):</label>
-    <input type="text" id="clockIn" maxlength="4" placeholder="0730">
-
-    <label>Clock-Out (HHMM, 24hrs(Follow Your Card)):</label>
-    <input type="text" id="clockOut" maxlength="4" placeholder="1600">
-
-    <button onclick="addEntry()">Add Entry</button>
-
-    <table id="recordsTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>From</th>
-          <th>To</th>
-          <th>Hours</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="total" id="totalHours">Total Hours: 0</div>
-    <div class="total" id="totalPay">Total Pay: RM0.00</div>
-
-    <button onclick="exportPDF()">📥 Export to PDF</button>
+  <h1>Trip Budget Calculator (RM)</h1>
+  
+  <div class="section">
+    <h3>Fixed Costs</h3>
+    <p>✈️ Flight: RM1612<br>🍽️ Food: RM500<br>🚌 Transport: RM100</p>
   </div>
 
+  <div class="section">
+    <h3>Choose Activities</h3>
+    <label><input type="checkbox" value="Chimelong"> Chimelong (RM201)</label>
+    <label><input type="checkbox" value="RiverCruise"> River Cruise (RM117)</label>
+    <label><input type="checkbox" value="CantonTower"> Canton Tower (RM160)</label>
+    <label><input type="checkbox" value="GrandViewAquarium"> GrandView Aquarium (RM200)</label>
+    <label><input type="checkbox" value="CantonTowerBubbleTram"> Canton Tower Bubble Tram (RM320)</label>
+    <label><input type="checkbox" value="HaiZhuTramLine"> HaiZhu Tram Line (RM4)</label>
+    <small>💡 Combo offer: River Cruise + Canton Tower = RM260</small>
+  </div>
+
+  <div class="section">
+    <h3>Choose Hotel for Each Day</h3>
+    <div id="hotelSelection"></div>
+  </div>
+
+  <button onclick="calculateBudget()">Calculate Total</button>
+
+  <div id="result" class="result"></div>
+
   <script>
-    let records = [];
-    const rate = 10.00;
+    const hotels = [
+      { name: "Queen Room", price: 96 },
+      { name: "Discount Double Room", price: 76 },
+      { name: "270° Tower View Suite On High Floor", price: 338 },
+      { name: "Tower View Deluxe King Room", price: 356 },
+      { name: "Angsea Sea Tower View", price: 199 },
+      { name: "Argyle Grand Hotel", price: 166 }
+    ];
 
-    function formatTime(input) {
-      if (!/^\d{4}$/.test(input)) return null;
-      return input.slice(0,2) + ":" + input.slice(2,4);
-    }
+    // create 8 dropdowns for 8 days
+    const hotelContainer = document.getElementById("hotelSelection");
+    for (let day = 1; day <= 8; day++) {
+      const select = document.createElement("select");
+      select.id = `hotelDay${day}`;
+      const label = document.createElement("label");
+      label.textContent = `Day ${day}:`;
 
-    function getValueOrPlaceholder(id) {
-      const el = document.getElementById(id);
-      return el.value.trim() || el.placeholder;
-    }
+      const defaultOption = document.createElement("option");
+      defaultOption.value = 0;
+      defaultOption.textContent = "-- Select Hotel --";
+      select.appendChild(defaultOption);
 
-    function addEntry() {
-      const name = getValueOrPlaceholder("name");
-      const month = getValueOrPlaceholder("month");
-      const day = getValueOrPlaceholder("day").padStart(2,'0');
-      const clockInRaw = getValueOrPlaceholder("clockIn");
-      const clockOutRaw = getValueOrPlaceholder("clockOut");
-
-      const clockIn = formatTime(clockInRaw);
-      const clockOut = formatTime(clockOutRaw);
-
-      if (!clockIn || !clockOut) {
-        alert("⚠️ Please enter valid time in HHMM format");
-        return;
-      }
-
-      const inTime = new Date(`${month} ${day}, ${new Date().getFullYear()} ${clockIn}`);
-      const outTime = new Date(`${month} ${day}, ${new Date().getFullYear()} ${clockOut}`);
-      if (outTime <= inTime) {
-        alert("⚠️ Clock-Out must be after Clock-In");
-        return;
-      }
-
-      const workHours = (outTime - inTime) / 3600000;
-
-      records.push({ date: `${day} ${month}`, from: clockIn, to: clockOut, hours: workHours.toFixed(2) });
-      updateTable();
-    }
-
-    function updateTable() {
-      const tbody = document.querySelector("#recordsTable tbody");
-      tbody.innerHTML = "";
-      let total = 0;
-
-      records.forEach(r => {
-        tbody.innerHTML += `<tr>
-          <td>${r.date}</td><td>${r.from}</td><td>${r.to}</td><td>${r.hours}</td>
-        </tr>`;
-        total += parseFloat(r.hours);
+      hotels.forEach(h => {
+        const opt = document.createElement("option");
+        opt.value = h.price;
+        opt.textContent = `${h.name} (RM${h.price})`;
+        select.appendChild(opt);
       });
 
-      document.getElementById("totalHours").innerText = `Total Hours: ${total.toFixed(2)}`;
-      document.getElementById("totalPay").innerText = `Total Pay: RM${(total * rate).toFixed(2)}`;
+      hotelContainer.appendChild(label);
+      hotelContainer.appendChild(select);
     }
 
-    function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
+    function calculateBudget() {
+      const fixedCost = 1612 + 500 + 100; // flight + food + transport
 
-      const name = getValueOrPlaceholder("name");
-      const month = getValueOrPlaceholder("month");
+      const activityPrices = {
+        Chimelong: 201,
+        RiverCruise: 117,
+        CantonTower: 160,
+        GrandViewAquarium: 200,
+        CantonTowerBubbleTram: 320,
+        HaiZhuTramLine: 4
+      };
 
-      doc.setFontSize(12);
-      doc.text("Pickle Venture Sdn. Bhd.", 14, 15);
-      doc.text("Part Time Work Claim Form", 14, 22);
-      doc.text(`Name: ${name}`, 14, 32);
-      doc.text(`Month: ${month}`, 14, 39);
+      const selectedActivities = Array.from(document.querySelectorAll('input[type=checkbox]:checked'))
+        .map(cb => cb.value);
 
-      // Table
-      doc.autoTable({
-        startY: 45,
-        head: [['Date', 'From', 'To', 'Hours']],
-        body: records.map(r => [r.date, r.from, r.to, r.hours]),
+      let activityTotal = 0;
+
+      // Special combo discount
+      if (selectedActivities.includes("RiverCruise") && selectedActivities.includes("CantonTower")) {
+        activityTotal += 260;
+        selectedActivities.splice(selectedActivities.indexOf("RiverCruise"), 1);
+        selectedActivities.splice(selectedActivities.indexOf("CantonTower"), 1);
+      }
+
+      // Add remaining activities
+      selectedActivities.forEach(a => {
+        activityTotal += activityPrices[a];
       });
 
-      let total = records.reduce((sum, r) => sum + parseFloat(r.hours), 0);
-      let finalY = doc.lastAutoTable.finalY + 10;
+      // Calculate hotel total (8 days)
+      let hotelTotal = 0;
+      for (let day = 1; day <= 8; day++) {
+        const val = Number(document.getElementById(`hotelDay${day}`).value);
+        hotelTotal += val;
+      }
 
-      doc.text(`Total Hours: ${total.toFixed(2)}`, 14, finalY);
-      doc.text(`Rate Per Hour: RM${rate.toFixed(2)}`, 14, finalY + 7);
-      doc.text(`Total: RM${(total * rate).toFixed(2)}`, 14, finalY + 14);
+      const total = fixedCost + activityTotal + hotelTotal;
 
-      doc.save("work_claim_form.pdf");
+      document.getElementById("result").innerHTML = `
+        <strong>Total Trip Budget:</strong> RM${total.toFixed(2)}<br>
+        <small>Includes flight, food, transport, activities, and 8 hotel nights.</small>
+      `;
     }
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
-
